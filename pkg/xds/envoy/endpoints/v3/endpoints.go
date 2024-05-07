@@ -1,7 +1,9 @@
 package endpoints
 
 import (
+	"fmt"
 	"sort"
+	"strconv"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -15,6 +17,7 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoi
 	localityLbEndpoints := LocalityLbEndpointsMap{}
 
 	for _, ep := range endpoints {
+
 		var address *envoy_core.Address
 		if ep.UnixDomainPath != "" {
 			address = &envoy_core.Address{
@@ -67,18 +70,29 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoi
 type LocalityLbEndpointsMap map[string]*envoy_endpoint.LocalityLbEndpoints
 
 func (l LocalityLbEndpointsMap) append(ep core_xds.Endpoint, endpoint *envoy_endpoint.LbEndpoint) {
-	key := ep.LocalityString()
+	priority := uint32(0)
+
+	if priorityTag, ok := ep.Tags["kuma.io/priority"]; ok {
+		if priorityVal, err := strconv.ParseUint(priorityTag, 10, 32); err == nil {
+			priority = uint32(priorityVal)
+		}
+	}
+
+	key := fmt.Sprintf("%s:%d", ep.LocalityString(), priority)
+	//fmt.Printf("def %#v\n", priority)
 	if _, ok := l[key]; !ok {
 		var locality *envoy_core.Locality
-		priority := uint32(0)
 		lbWeight := uint32(0)
+
 		if ep.HasLocality() {
 			locality = &envoy_core.Locality{
 				Zone:    ep.Locality.Zone,
 				SubZone: ep.Locality.SubZone,
 			}
-			priority = ep.Locality.Priority
 			lbWeight = ep.Locality.Weight
+			if ep.Locality.Priority > priority {
+				priority = ep.Locality.Priority
+			}
 		}
 
 		localityLbEndpoint := &envoy_endpoint.LocalityLbEndpoints{
