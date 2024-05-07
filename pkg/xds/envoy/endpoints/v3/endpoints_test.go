@@ -137,6 +137,54 @@ var _ = Describe("Endpoints", func() {
                     loadBalancingWeight: 2
 `,
 			}),
+			Entry("with canary tag", testCase{
+				cluster: "127.0.0.1:8080",
+				endpoints: []core_xds.Endpoint{
+					{
+						Target: "192.168.0.1",
+						Port:   8081,
+						Tags:   map[string]string{"kuma.io/service": "backend", "region": "us"},
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.2",
+						Port:   8082,
+						Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/canary": "true"},
+						Weight: 2,
+					},
+				},
+				expected: `
+                clusterName: 127.0.0.1:8080
+                endpoints:
+                - lbEndpoints:
+                  - endpoint:
+                      address:
+                        socketAddress:
+                          address: 192.168.0.1
+                          portValue: 8081
+                    metadata:
+                      filterMetadata:
+                        envoy.lb:
+                          region: us
+                        envoy.transport_socket_match:
+                          region: us
+                    loadBalancingWeight: 1
+                  - endpoint:
+                      address:
+                        socketAddress:
+                          address: 192.168.0.2
+                          portValue: 8082
+                    metadata:
+                      filterMetadata:
+                        envoy.lb:
+                          kuma.io/canary: "true"
+                          canary: true
+                        envoy.transport_socket_match:
+                          kuma.io/canary: "true"
+                          canary: true
+                    loadBalancingWeight: 2
+`,
+			}),
 			Entry("with locality tags", testCase{
 				cluster: "127.0.0.1:8080",
 				endpoints: []core_xds.Endpoint{

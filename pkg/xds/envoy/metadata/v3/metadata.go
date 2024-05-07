@@ -50,6 +50,13 @@ func MetadataFields(tags tags.Tags) map[string]*structpb.Value {
 			},
 		}
 	}
+	if value, ok := tags["kuma.io/canary"]; ok && value == "true" {
+		fields["canary"] = &structpb.Value{
+			Kind: &structpb.Value_BoolValue{
+				BoolValue: true,
+			},
+		}
+	}
 	return fields
 }
 
