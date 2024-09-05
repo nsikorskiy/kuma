@@ -427,6 +427,7 @@ func buildGrpcService(params configParameters, useTokenPath bool) *envoy_core_v3
 			TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
 				EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
 					ClusterName: adsClusterName,
+					Authority:   params.XdsHost,
 				},
 			},
 		}
