@@ -27,13 +27,14 @@ import (
 var Log = core.Log.WithName("dns-vips-allocator")
 
 type VIPsAllocator struct {
-	rm                manager.ReadOnlyResourceManager
-	persistence       *vips.Persistence
-	cidr              string
-	serviceVipEnabled bool
-	dnsSuffix         string
-	zone              string
-	metrics           *dns_metrics.Metrics
+	rm                       manager.ReadOnlyResourceManager
+	persistence              *vips.Persistence
+	cidr                     string
+	serviceVipEnabled        bool
+	serviceVipUseServicePort bool
+	dnsSuffix                string
+	zone                     string
+	metrics                  *dns_metrics.Metrics
 }
 
 // NewVIPsAllocator creates new object of VIPsAllocator. You can either
@@ -47,13 +48,14 @@ func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_m
 	}
 
 	return &VIPsAllocator{
-		rm:                rm,
-		persistence:       vips.NewPersistence(rm, configManager, experimentalConfig.UseTagFirstVirtualOutboundModel),
-		serviceVipEnabled: config.ServiceVipEnabled,
-		cidr:              config.CIDR,
-		dnsSuffix:         config.Domain,
-		zone:              zone,
-		metrics:           dnsMetrics,
+		rm:                       rm,
+		persistence:              vips.NewPersistence(rm, configManager, experimentalConfig.UseTagFirstVirtualOutboundModel),
+		serviceVipEnabled:        config.ServiceVipEnabled,
+		serviceVipUseServicePort: config.ServiceVipUseServicePort,
+		cidr:                     config.CIDR,
+		dnsSuffix:                config.Domain,
+		zone:                     zone,
+		metrics:                  dnsMetrics,
 	}, nil
 }
 
@@ -356,7 +358,11 @@ func (d *VIPsAllocator) buildVirtualOutboundMeshView(
 				continue
 			}
 			if d.serviceVipEnabled {
-				errs = multierr.Append(errs, addDefault(outboundSet, inbound.GetService(), 0))
+				if d.serviceVipUseServicePort {
+					errs = multierr.Append(errs, addDefault(outboundSet, inbound.GetService(), inbound.ServicePort))
+				} else {
+					errs = multierr.Append(errs, addDefault(outboundSet, inbound.GetService(), 0))
+				}
 			}
 			for _, vob := range Match(virtualOutbounds, inbound.Tags) {
 				addFromVirtualOutbound(outboundSet, vob, inbound.Tags, dp.Descriptor().Name, dp.Meta.GetName())

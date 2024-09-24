@@ -19,6 +19,8 @@ type Config struct {
 	ServiceVipEnabled bool `json:"serviceVipEnabled" envconfig:"kuma_dns_server_service_vip_enabled"`
 	// ServiceVipPort the port to use for virtual IP
 	ServiceVipPort uint32 `json:"serviceVipPort" envconfig:"kuma_dns_server_service_vip_port"`
+	// ServiceVipUseServicePort will use service port for every service, like external service or virtual outbound.
+	ServiceVipUseServicePort bool `json:"serviceVipUseServicePort" envconfig:"kuma_dns_server_service_vip_use_service_port"`
 }
 
 func (g *Config) Validate() error {
@@ -36,9 +38,10 @@ var _ config.Config = &Config{}
 
 func DefaultDNSServerConfig() *Config {
 	return &Config{
-		ServiceVipEnabled: true,
-		Domain:            "mesh",
-		CIDR:              "240.0.0.0/4",
-		ServiceVipPort:    80,
+		ServiceVipEnabled:        true,
+		ServiceVipUseServicePort: false,
+		Domain:                   "mesh",
+		CIDR:                     "240.0.0.0/4",
+		ServiceVipPort:           80,
 	}
 }
