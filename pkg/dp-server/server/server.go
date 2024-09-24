@@ -16,6 +16,8 @@ import (
 	"github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
 
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
@@ -59,6 +61,8 @@ func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics, filte
 	}
 	grpcOptions = append(grpcOptions, metrics.GRPCServerInterceptors()...)
 	grpcServer := grpc.NewServer(grpcOptions...)
+
+	grpc_health_v1.RegisterHealthServer(grpcServer, health.NewServer())
 
 	promMiddleware := middleware.New(middleware.Config{
 		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
