@@ -21,6 +21,7 @@ import (
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kumahq/kuma/pkg/config/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -484,6 +485,20 @@ func buildStaticClusters(parameters configParameters, enableReloadableTokens boo
 					KeepaliveProbes:   util_proto.UInt32(3),
 					KeepaliveTime:     util_proto.UInt32(10),
 					KeepaliveInterval: util_proto.UInt32(10),
+				},
+			},
+			HealthChecks: []*envoy_core_v3.HealthCheck{
+				{
+					HealthChecker: &envoy_core_v3.HealthCheck_GrpcHealthCheck_{
+						GrpcHealthCheck: &envoy_core_v3.HealthCheck_GrpcHealthCheck{
+							Authority: parameters.XdsHost,
+						},
+					},
+					Timeout:            util_proto.Duration(time.Second * 3),
+					Interval:           util_proto.Duration(time.Second * 6),
+					UnhealthyThreshold: util_proto.UInt32(2),
+					HealthyThreshold:   util_proto.UInt32(2),
+					ReuseConnection:    &wrapperspb.BoolValue{Value: true},
 				},
 			},
 			ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: clusterTypeFromHost(parameters.XdsHost)},
