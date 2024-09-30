@@ -487,6 +487,13 @@ func buildStaticClusters(parameters configParameters, enableReloadableTokens boo
 					KeepaliveInterval: util_proto.UInt32(10),
 				},
 			},
+			Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{
+				ConnectionKeepalive: &envoy_core_v3.KeepaliveSettings{
+					Interval:               util_proto.Duration(time.Second * 30),
+					Timeout:                util_proto.Duration(time.Second * 2),
+					ConnectionIdleInterval: util_proto.Duration(time.Second * 5),
+				},
+			},
 			HealthChecks: []*envoy_core_v3.HealthCheck{
 				{
 					HealthChecker: &envoy_core_v3.HealthCheck_GrpcHealthCheck_{
